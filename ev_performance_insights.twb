@@ -1,0 +1,312 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<workbook source-build='2024.1.0' source-platform='win' version='18.1' xmlns:user='http://www.tableausoftware.com/xml/user'>
+  <document-location>tableau</document-location>
+  <preferences>
+    <preference name='ui.encoding.shelf.height' value='24' />
+    <preference name='ui.shelf.height' value='26' />
+  </preferences>
+  
+  <datasources>
+    <datasource caption='EV Market Master Dataset' inline='true' name='federated.ev_market_data' version='18.1'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='ev_market_data' name='textscan.ev_market_data'>
+            <connection class='textscan' directory='.' filename='ev_market_data.csv' />
+          </named-connection>
+        </named-connections>
+      </connection>
+      
+      <aliases enabled='yes' />
+      
+      <column datatype='string' name='[Manufacturer]' role='dimension' type='nominal' />
+      <column datatype='string' name='[Model]' role='dimension' type='nominal' />
+      <column datatype='string' name='[Vehicle Category]' role='dimension' type='nominal' />
+      <column datatype='integer' name='[Model Year]' role='dimension' type='ordinal' />
+      <column datatype='integer' name='[Annual Sales (Units)]' role='measure' type='quantitative' />
+      <column datatype='real' name='[Price ($)]' role='measure' type='quantitative' />
+      <column datatype='string' name='[Battery Type]' role='dimension' type='nominal' />
+      <column datatype='real' name='[Battery Capacity (kWh)]' role='measure' type='quantitative' />
+      <column datatype='real' name='[Driving Range (km)]' role='measure' type='quantitative' />
+      <column datatype='real' name='[Charging Time (mins)]' role='measure' type='quantitative' />
+      <column datatype='real' name='[Max Charging Speed (kW)]' role='measure' type='quantitative' />
+      <column datatype='string' name='[Manufacturing Country]' role='dimension' semantic-role='[Country].[Name]' type='nominal' />
+      <column datatype='real' name='[Customer Rating]' role='measure' type='quantitative' />
+      <column datatype='real' name='[Lifecycle CO2 Avoided (tons/yr)]' role='measure' type='quantitative' />
+      <column datatype='real' name='[Recycled Material (%)]' role='measure' type='quantitative' />
+      <column datatype='real' name='[Value Index (km/$1k)]' role='measure' type='quantitative' />
+
+      <!-- Tableau Calculated Field: Sales in Millions -->
+      <column caption='Sales (Millions)' datatype='real' name='[Calculation_SalesMillions]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='[Annual Sales (Units)] / 1000000' />
+      </column>
+
+      <!-- Tableau Calculated Field: Value Index -->
+      <column caption='Value Index (Range per $1k)' datatype='real' name='[Calculation_ValueIndex]' role='measure' type='quantitative'>
+        <calculation class='tableau' formula='([Driving Range (km)] / [Price ($)]) * 1000' />
+      </column>
+
+      <!-- Tableau Calculated Field: Customer Satisfaction Band -->
+      <column caption='Satisfaction Tier' datatype='string' name='[Calculation_SatTier]' role='dimension' type='nominal'>
+        <calculation class='tableau' formula='IF [Customer Rating] &gt;= 4.7 THEN &quot;Exceptional (4.7 - 5.0)&quot; ELSEIF [Customer Rating] &gt;= 4.4 THEN &quot;High (4.4 - 4.6)&quot; ELSE &quot;Standard (&lt; 4.4)&quot; END' />
+      </column>
+    </datasource>
+  </datasources>
+
+  <worksheets>
+    <!-- Worksheet 1: Sales by Category Donut / Bar -->
+    <worksheet name='Sales by Category'>
+      <table>
+        <view>
+          <datasources>
+            <datasource name='federated.ev_market_data' />
+          </datasources>
+          <datasource-dependencies datasource='federated.ev_market_data'>
+            <column datatype='string' name='[Vehicle Category]' role='dimension' type='nominal' />
+            <column datatype='integer' name='[Annual Sales (Units)]' role='measure' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Bar' />
+            <encodings>
+              <color column='[federated.ev_market_data].[Vehicle Category]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.ev_market_data].[Annual Sales (Units)]</rows>
+        <cols>[federated.ev_market_data].[Vehicle Category]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Worksheet 2: Multi-Year Sales Trend Line -->
+    <worksheet name='Sales Trend &amp; Growth'>
+      <table>
+        <view>
+          <datasources>
+            <datasource name='federated.ev_market_data' />
+          </datasources>
+          <datasource-dependencies datasource='federated.ev_market_data'>
+            <column datatype='integer' name='[Model Year]' role='dimension' type='ordinal' />
+            <column datatype='real' name='[Calculation_SalesMillions]' role='measure' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Line' />
+          </pane>
+        </panes>
+        <rows>[federated.ev_market_data].[Calculation_SalesMillions]</rows>
+        <cols>[federated.ev_market_data].[Model Year]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Worksheet 3: Top 10 Manufacturers Bar Chart -->
+    <worksheet name='Top 10 Manufacturers'>
+      <table>
+        <view>
+          <datasources>
+            <datasource name='federated.ev_market_data' />
+          </datasources>
+          <datasource-dependencies datasource='federated.ev_market_data'>
+            <column datatype='string' name='[Manufacturer]' role='dimension' type='nominal' />
+            <column datatype='real' name='[Calculation_SalesMillions]' role='measure' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Bar' />
+            <encodings>
+              <color column='[federated.ev_market_data].[Calculation_SalesMillions]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.ev_market_data].[Manufacturer]</rows>
+        <cols>[federated.ev_market_data].[Calculation_SalesMillions]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Worksheet 4: Price vs Range Scatter Plot -->
+    <worksheet name='Price vs Range Positioning'>
+      <table>
+        <view>
+          <datasources>
+            <datasource name='federated.ev_market_data' />
+          </datasources>
+          <datasource-dependencies datasource='federated.ev_market_data'>
+            <column datatype='string' name='[Model]' role='dimension' type='nominal' />
+            <column datatype='string' name='[Battery Type]' role='dimension' type='nominal' />
+            <column datatype='real' name='[Price ($)]' role='measure' type='quantitative' />
+            <column datatype='real' name='[Driving Range (km)]' role='measure' type='quantitative' />
+            <column datatype='integer' name='[Annual Sales (Units)]' role='measure' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Circle' />
+            <encodings>
+              <color column='[federated.ev_market_data].[Battery Type]' />
+              <size column='[federated.ev_market_data].[Annual Sales (Units)]' />
+              <tooltip column='[federated.ev_market_data].[Model]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.ev_market_data].[Driving Range (km)]</rows>
+        <cols>[federated.ev_market_data].[Price ($)]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Worksheet 5: Battery Tech Distribution -->
+    <worksheet name='Battery Chemistry Distribution'>
+      <table>
+        <view>
+          <datasources>
+            <datasource name='federated.ev_market_data' />
+          </datasources>
+          <datasource-dependencies datasource='federated.ev_market_data'>
+            <column datatype='string' name='[Battery Type]' role='dimension' type='nominal' />
+            <column datatype='real' name='[Calculation_SalesMillions]' role='measure' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Bar' />
+            <encodings>
+              <color column='[federated.ev_market_data].[Battery Type]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.ev_market_data].[Calculation_SalesMillions]</rows>
+        <cols>[federated.ev_market_data].[Battery Type]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Worksheet 6: Global Production Map -->
+    <worksheet name='Global Manufacturing Map'>
+      <table>
+        <view>
+          <datasources>
+            <datasource name='federated.ev_market_data' />
+          </datasources>
+          <datasource-dependencies datasource='federated.ev_market_data'>
+            <column datatype='string' name='[Manufacturing Country]' role='dimension' semantic-role='[Country].[Name]' type='nominal' />
+            <column datatype='real' name='[Calculation_SalesMillions]' role='measure' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Circle' />
+            <encodings>
+              <color column='[federated.ev_market_data].[Calculation_SalesMillions]' />
+              <size column='[federated.ev_market_data].[Calculation_SalesMillions]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.ev_market_data].[Manufacturing Country]</rows>
+        <cols>[federated.ev_market_data].[Calculation_SalesMillions]</cols>
+      </table>
+    </worksheet>
+
+    <!-- Worksheet 7: Customer Rating by Category -->
+    <worksheet name='Rating by Category'>
+      <table>
+        <view>
+          <datasources>
+            <datasource name='federated.ev_market_data' />
+          </datasources>
+          <datasource-dependencies datasource='federated.ev_market_data'>
+            <column datatype='string' name='[Vehicle Category]' role='dimension' type='nominal' />
+            <column datatype='real' name='[Customer Rating]' role='measure' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style />
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Bar' />
+            <encodings>
+              <color column='[federated.ev_market_data].[Vehicle Category]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.ev_market_data].[Customer Rating]</rows>
+        <cols>[federated.ev_market_data].[Vehicle Category]</cols>
+      </table>
+    </worksheet>
+  </worksheets>
+
+  <dashboards>
+    <!-- Executive Summary Dashboard -->
+    <dashboard name='1. Executive Summary'>
+      <style />
+      <size maxheight='900' maxwidth='1440' minheight='700' minwidth='1000' sizing-mode='proportional' />
+      <zones>
+        <zone h='100000' id='1' type-v2='layout-basic' w='100000' x='0' y='0'>
+          <zone h='50000' id='2' name='Sales by Category' w='50000' x='0' y='0' />
+          <zone h='50000' id='3' name='Sales Trend &amp; Growth' w='50000' x='50000' y='0' />
+          <zone h='50000' id='4' name='Top 10 Manufacturers' w='100000' x='0' y='50000' />
+        </zone>
+      </zones>
+    </dashboard>
+
+    <!-- Competitive & Positioning Dashboard -->
+    <dashboard name='2. Competitive Positioning'>
+      <style />
+      <size maxheight='900' maxwidth='1440' minheight='700' minwidth='1000' sizing-mode='proportional' />
+      <zones>
+        <zone h='100000' id='5' type-v2='layout-basic' w='100000' x='0' y='0'>
+          <zone h='100000' id='6' name='Price vs Range Positioning' w='100000' x='0' y='0' />
+        </zone>
+      </zones>
+    </dashboard>
+
+    <!-- Technology & Geography Dashboard -->
+    <dashboard name='3. Technology &amp; Geography'>
+      <style />
+      <size maxheight='900' maxwidth='1440' minheight='700' minwidth='1000' sizing-mode='proportional' />
+      <zones>
+        <zone h='100000' id='7' type-v2='layout-basic' w='100000' x='0' y='0'>
+          <zone h='50000' id='8' name='Battery Chemistry Distribution' w='50000' x='0' y='0' />
+          <zone h='50000' id='9' name='Rating by Category' w='50000' x='50000' y='0' />
+          <zone h='50000' id='10' name='Global Manufacturing Map' w='100000' x='0' y='50000' />
+        </zone>
+      </zones>
+    </dashboard>
+  </dashboards>
+
+  <windows>
+    <window class='dashboard' maximized='true' name='1. Executive Summary' />
+  </windows>
+</workbook>
